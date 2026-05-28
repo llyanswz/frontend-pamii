@@ -35,11 +35,6 @@ export class UsuarioController {
         return await this.usuarioService.findByPerfil(perfil);
     }
 
-    @Post('login')
-    async login(usuario: string, senha: string): Promise<IUsuarioOutput> {
-        return await this.usuarioService.login(usuario, senha);
-    }
-
     @Patch(':id')
     async update(@Param('id') id: number, @Body() updateUsuarioDto: UpdateUsuarioDto): Promise<IUsuarioOutput> {
         return await this.usuarioService.update(id, updateUsuarioDto);

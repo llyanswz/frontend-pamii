@@ -1,5 +1,6 @@
 import './LoginPage.css'
 import { createHeader } from '../../shared/Header.js'
+import { api } from '../../shared/api.js'
 
 const pageName = 'Login';
 
@@ -47,17 +48,21 @@ class LoginPage extends HTMLElement {
 
             const loading = document.createElement('ion-loading');
             loading.message = 'Autenticando...';
-            loading.duration = 3000;
-
             document.body.appendChild(loading);
             await loading.present();
-            await loading.onDidDismiss(); // Aguardar o tempo do loading
 
-            if (usuario == 'admin' && senha == 'admin') {
+            try {
+                const data = await api.post('/auth/login', { usuario, senha });
+
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                await loading.dismiss();
                 toast('Login realizado com sucesso!', 'success');
-                document.querySelector('ion-router').push('/home', 'forward')
-            } else {
-                toast('Usuário ou senha incorretos!');
+                document.querySelector('ion-router').push('/home', 'forward');
+            } catch (error) {
+                await loading.dismiss();
+                toast(error.message || 'Usuário ou senha incorretos!');
             }
         })
 
