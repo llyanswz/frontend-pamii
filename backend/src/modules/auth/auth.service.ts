@@ -1,8 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
-import { LoginAuthDto } from './dto/login-auth.dto';
-import { IUsuarioPayload, ILoginResponse } from './interfaces/auth.interface';
 
 @Injectable()
 export class AuthService {
@@ -11,23 +9,22 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginAuthDto): Promise<ILoginResponse> {
-    const user = await this.usuarioService.login(dto.usuario, dto.senha);
-
-    const payload: IUsuarioPayload = {
-      id: user.id,
+  async login(usuario: string, senha: string) {
+    const user = await this.usuarioService.login(usuario, senha);
+    
+    // Remover senha do payload do token
+    const { senha: _, ...userWithoutPassword } = user;
+    
+    const payload = { 
+      sub: user.id, 
       usuario: user.usuario,
-      perfil: user.perfil,
+      nome: user.nome,
+      perfil: user.perfil
     };
-
+    
     return {
       access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
-        nome: user.nome,
-        usuario: user.usuario,
-        perfil: user.perfil,
-      },
+      user: userWithoutPassword,
     };
   }
 }
