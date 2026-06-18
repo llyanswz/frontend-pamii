@@ -1,59 +1,37 @@
 import './ListUsuarioPage.css'
 import { createHeader } from '../../shared/Header.js'
-import { logout } from '../../shared/util.js'; 
+import { logout, toast } from '../../shared/util.js'; 
+import { api } from '../../shared/api.js';
 
 const pageName = 'Usuário';
 
 class ListUsuarioPage extends HTMLElement {
-    connectedCallback() {
+    async connectedCallback() {
         this.classList.add('ion-page');
         const cabecalho = createHeader(pageName);
         this.innerHTML = `
             ${cabecalho}
             <ion-content>
-                <div class="list-usuario"></div>
+                <div class="list-usuario">
+                    <ion-spinner slot="fixed"></ion-spinner>
+                </div>
             </ion-content>
         `;
         this.querySelector('#logout-btn')
         .addEventListener('click', logout);
 
-         // buscando os usuarios
-        const usuarios = this.fetchUsuarios() || [];
-        
-        // renderizando os usuarios no HTML
-        this.renderUsuarios(usuarios);
-    }
-
-    fetchUsuarios() {
-        return [
-            {
-                "id": 1,
-                "nome": "Diego Pires",
-                "usuario": "diego.pires",
-                "senha": "123abc@",
-                "perfil": 1
-            },
-            {
-                "id": 2,
-                "nome": "João da Couves",
-                "usuario": "joao.couve",
-                "senha": "123abc@",
-                "perfil": 0
-            },
-            {
-                "id": 3,
-                "nome": "Fulano da Silva",
-                "usuario": "fulano.silva",
-                "senha": "123abc@",
-                "perfil": 0
-            }
-        ]
+        try {
+            const usuarios = await api.get('/usuario');
+            this.renderUsuarios(usuarios);
+        } catch (error) {
+            await toast(error.message || 'Erro ao carregar usuários');
+            this.querySelector(".list-usuario").innerHTML = '<p>Erro ao carregar usuários</p>';
+        }
     }
 
     renderUsuarios(usuarios) {
         const container = this.querySelector(".list-usuario");
 
-        // SE USUARIO VAZIO, MOSTRAR MENSAGEM AO USUÁRIO
         if (usuarios.length === 0) {
             container.innerHTML = '<p> Nenhum usuario encontrado </p>'
             return;
@@ -85,6 +63,30 @@ class ListUsuarioPage extends HTMLElement {
             `).join('');
     
         container.innerHTML = `<ion-list>${usuarioItems}</ion-list>`;
+
+        // Eventos de editar e deletar
+        this.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                document.querySelector('ion-router').push(`/usuario/edit?id=${id}`, 'forward');
+            });
+        });
+
+        this.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                if (confirm('Tem certeza que deseja excluir este usuário?')) {
+                    try {
+                        await api.delete(`/usuario/${id}`);
+                        await toast('Usuário excluído com sucesso!', 'success');
+                        const usuariosAtualizados = await api.get('/usuario');
+                        this.renderUsuarios(usuariosAtualizados);
+                    } catch (error) {
+                        await toast(error.message || 'Erro ao excluir usuário');
+                    }
+                }
+            });
+        });
     }
 }
 
